@@ -45,7 +45,6 @@ const findUser =  (req, res) => {
 
 }
 
-
 // be38cc8f-dbab-4c2e-91f2-dc6cd16c5e2c //EMILIO ID
 
 // af03a2cb-4816-4ace-9a8b-e0494ce979a4 // LUIS ID
@@ -68,9 +67,42 @@ const createRoom =  (req, res) => {
 
 }
 
+const insertMessage = (data, io) => {
+    if(data.message !== "" || data.message !== null) {
+        try {
+            const query = `INSERT INTO message (id, from_u_id, to_u_id, message, date_created, room_id)
+            VALUES ('${geneId()}','${data.from}','${data.to}',"${data.message}",CURRENT_TIMESTAMP,'${data.roomId}')`
+    
+            mysql.query(query, (err, result) => {
+                if(err) throw err
+                returnMesage(data, io)
+            })
+    
+        } catch (error) {
+            console.log(error)   
+        }
+    }
+}
+
+const returnMesage = (data, io) => {
+    try {
+        const query = `SELECT socket_id as socket FROM register_user
+        WHERE (id = '${data.from}' OR id = '${data.to}')`
+
+        mysql.query(query, (err, result) => {
+            if(err) throw err
+            io.to(result[0].socket).to(result[1].socket).emit("message", data)
+        })
+
+    } catch (error) {
+        console.log(error)        
+    }
+}
+
 module.exports = {
     getRooms,
     findUser,
     createRoom,
-    getContacts
+    getContacts,
+    insertMessage
 }

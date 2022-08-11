@@ -5,6 +5,7 @@ const { Server } = require("socket.io")
 
 const { router } = require('./routers/authRouter')
 const chatRouter = require('./controller/chatBusiness/chatRouter')
+const { insertMessage } = require('./controller/chatBusiness/chatLogic')
 
 const port = 3000
 
@@ -27,8 +28,13 @@ io.on("connection", (socket) => {
         const user = JSON.parse(data)
         updateSocket(user.id, user.socketId)
     }) 
+
+    socket.on("private", (package) => {
+        const data = JSON.parse(package)
+        insertMessage(data, io)
+    })
+
+
 })
-
-
 
 module.exports = { server, io }
