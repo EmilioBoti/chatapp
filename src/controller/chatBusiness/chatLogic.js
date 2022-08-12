@@ -10,11 +10,13 @@ const getMessages = (req, res) => {
 
     try {
         const query = `SELECT message.room_id as roomId, message.id as messageId, register_user.id as userId,
-        register_user.name as userName, message.message, message.date_created 
+        register_user.name as userName, message.message, TIME(message.date_created) as times
         FROM message
         INNER JOIN register_user 
         ON register_user.id = message.from_u_id
-        WHERE room_id = '${roomId}'`
+        WHERE room_id = '${roomId}'
+        ORDER BY times
+        `
 
         mysql.query(query, (err, result) => {
             if(err) throw err
