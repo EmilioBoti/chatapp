@@ -124,5 +124,6 @@ module.exports = {
     findUser,
     createRoom,
     getContacts,
-    getMessages
+    getMessages,
+    insertMessage
 }
