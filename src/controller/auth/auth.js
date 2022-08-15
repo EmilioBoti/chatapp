@@ -85,8 +85,8 @@ const response = (res, status, object) => {
 
 const updateSocket = (id, socketId) => {
     try {
-        const query = `UPDATE register_user SET socket_id = '${socketId}' WHERE id = "${id}"`
-        mysql.query(query, (err, result) =>{
+        const query = `UPDATE register_user SET socket_id = ? WHERE id = ?`
+        mysql.query(query,[socketId, id] ,(err, result) =>{
             if(err) throw err
         })
         

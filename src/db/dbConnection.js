@@ -8,4 +8,9 @@ const connDB = mysql.createPool({
     password: ''
 })
 
+
+connDB.getConnection((err)=>{
+    if(err) throw err
+    console.log('data base connected...')
+})
 module.exports = connDB

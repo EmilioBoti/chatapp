@@ -1,3 +1,6 @@
+
+require("dotenv").config()
+
 const express = require('express')
 const app = express()
 const { updateSocket } = require("./controller/auth/auth")

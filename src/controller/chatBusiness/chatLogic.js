@@ -1,6 +1,8 @@
 const { v4: geneId } = require("uuid")
 const mysql = require("../../db/dbConnection")
 const bcrypt = require("bcryptjs")
+const dayjs = require("dayjs")
+
 const { getRooms } = require("../../services/user.service")
 
 
@@ -9,18 +11,23 @@ const getMessages = (req, res) => {
     const { roomId } = req.params
 
     try {
-        const query = `SELECT message.room_id as roomId, message.id as messageId, register_user.id as userId,
-        register_user.name as userName, message.message, TIME(message.date_created) as times
+        const query = `SELECT message.room_id as roomId, message.id as messageId, message.from_u_id as fromU,
+        message.to_u_id as toU, register_user.name as userName,
+        message.message, message.date_created as times
         FROM message
         INNER JOIN register_user 
         ON register_user.id = message.from_u_id
-        WHERE room_id = '${roomId}'
+        WHERE room_id = ?
         ORDER BY times
         `
 
-        mysql.query(query, (err, result) => {
+        mysql.query(query, [roomId] ,(err, result) => {
             if(err) throw err
-            res.status(201).json(result)
+            const messages = result.map( item =>  {
+                item.times = dayjs(item.times).format('HH:mm a')
+                return item
+            })
+            res.status(201).json(messages)
          })
 
     } catch (error) {
@@ -41,10 +48,10 @@ const getContacts = async (req, res) => {
         ON register_user.id = userroom.userId
         INNER JOIN register_user as users
         ON users.id = userroom.otherUserId
-        WHERE users.id = "${id}"`
+        WHERE users.id = ?`
 
-        mysql.query(query, (err, result) => {
-            if(err) throw err
+        mysql.query(query, [id] ,(err, result) => {
+            if(err) throw err  
             res.status(201).json(result)
          })
 
@@ -57,9 +64,9 @@ const findUser =  (req, res) => {
     const user = req.params.user
 
     try {
-        const query = `SELECT * FROM register_user WHERE (email LIKE '${user}%' OR name LIKE '${user}%')`
+        const query = `SELECT * FROM register_user WHERE (email LIKE ? OR name LIKE ?)`
 
-        mysql.query(query, (err, result) => {
+        mysql.query(query, [user, user],(err, result) => {
             if(err) throw err
             res.status(201).json(result)
          })
@@ -67,7 +74,6 @@ const findUser =  (req, res) => {
     } catch (error) {
         res.status(500).json(null)
     }
-
 }
 
 const createRoom =  (req, res) => {
@@ -89,13 +95,21 @@ const createRoom =  (req, res) => {
 
 const insertMessage = (data, io) => {
     if(data.message !== "" || data.message !== null) {
+        
+        const time = dayjs().format()
+        const message = {
+            ...data,
+            id: geneId(),
+            times: dayjs().format('HH:mm a')
+        }
+
         try {
             const query = `INSERT INTO message (id, from_u_id, to_u_id, message, date_created, room_id)
-            VALUES ('${geneId()}','${data.from}','${data.to}',"${data.message}",CURRENT_TIMESTAMP,'${data.roomId}')`
+            VALUES (?,?,?,?,?,?)`
     
-            mysql.query(query, (err, result) => {
+            mysql.query(query,[message.id, message.fromU, message.toU, message.message, time , message.roomId] ,(err, result) => {
                 if(err) throw err
-                returnMesage(data, io)
+                returnMesage(message, io)
             })
     
         } catch (error) {
@@ -104,14 +118,14 @@ const insertMessage = (data, io) => {
     }
 }
 
-const returnMesage = (data, io) => {
+const returnMesage = (message, io) => {
     try {
         const query = `SELECT socket_id as socket FROM register_user
-        WHERE (id = '${data.from}' OR id = '${data.to}')`
+        WHERE (id = ? OR id = ?)`
 
-        mysql.query(query, (err, result) => {
+        mysql.query(query,[message.fromU, message.toU],(err, result) => {
             if(err) throw err
-            io.to(result[0].socket).to(result[1].socket).emit("message", data)
+            io.to(result[0].socket).to(result[1].socket).emit("message", JSON.stringify(message))
         })
 
     } catch (error) {
