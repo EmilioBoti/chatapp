@@ -42,13 +42,21 @@ const getContacts = async (req, res) => {
     try {
         const query = `SELECT userroom.roomId, register_user.id,
         register_user.socket_id as socketId, register_user.name,
-        register_user.email
+        register_user.email, message.date_created as dates,
+        (SELECT message.message 
+        FROM message 
+        WHERE message.room_id = userroom.roomId
+        ORDER BY message.date_created DESC
+        LIMIT 1) as lastMessage
         FROM userroom 
         INNER JOIN register_user
         ON register_user.id = userroom.userId
         INNER JOIN register_user as users
         ON users.id = userroom.otherUserId
-        WHERE users.id = ?`
+        INNER JOIN message 
+        ON message.to_u_id = users.id
+        WHERE users.id = ?
+        GROUP BY register_user.email`
 
         mysql.query(query, [id] ,(err, result) => {
             if(err) throw err  
@@ -95,7 +103,7 @@ const createRoom =  (req, res) => {
 
 const insertMessage = (data, io) => {
     if(data.message !== "" || data.message !== null) {
-        
+
         const time = dayjs().format()
         const message = {
             ...data,
@@ -107,7 +115,7 @@ const insertMessage = (data, io) => {
             const query = `INSERT INTO message (id, from_u_id, to_u_id, message, date_created, room_id)
             VALUES (?,?,?,?,?,?)`
     
-            mysql.query(query,[message.id, message.fromU, message.toU, message.message, time , message.roomId] ,(err, result) => {
+            mysql.query(query,[message.id, message.fromU, message.toU, message.message.trim(), time , message.roomId] ,(err, result) => {
                 if(err) throw err
                 returnMesage(message, io)
             })
