@@ -4,7 +4,7 @@ const authController = require('../controller/auth/auth')
 
 
 router.post("/login" , authController.login)
-router.post("/register" , authController.register)
+router.post("/signin" , authController.register)
 
 
 module.exports = {

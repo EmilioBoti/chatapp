@@ -2,28 +2,28 @@ const { v4: geneId } = require("uuid")
 const mysql = require("../../db/dbConnection")
 const bcrypt = require("bcryptjs")
 
+
+
 const register =  async (req, res) => {
     const passW = await bcrypt.hash(req.body.pw, 8)
 
     const user = {
         id: geneId(),
+        name: req.body.name,
         email: req.body.email,
         pw: passW
     }
-
+   
     try {
         const query = `INSERT INTO register_user (id, name , email, pw, date_created)
-        values("${user.id}", "${user.email.substring(0,1).toUpperCase()}","${user.email}", "${user.pw}", CURRENT_TIMESTAMP)
+        values("${user.id}", "${user.name}","${user.email.toLowerCase()}", "${user.pw}", CURRENT_TIMESTAMP)
         `
         mysql.query(query, (error, result) => {
         
             if(error) throw error
             res.status(201).json({
                 OK: true,
-                body: { 
-                    message: "successfull",
-                    content: result
-                }
+                body: user
             })   
           
         })     

@@ -2,9 +2,11 @@ const { v4: geneId } = require("uuid")
 const mysql = require("../../db/dbConnection")
 const bcrypt = require("bcryptjs")
 const dayjs = require("dayjs")
+const events = require("events")
 
 const { getRooms } = require("../../services/user.service")
 
+const chatEventsEmitter = new events.EventEmitter()
 
 
 const getMessages = (req, res) => {
@@ -72,9 +74,9 @@ const findUser =  (req, res) => {
     const user = req.params.user
 
     try {
-        const query = `SELECT * FROM register_user WHERE (email LIKE ? OR name LIKE ?)`
+        const query = `SELECT id, name, email, socket_id as socketId FROM register_user WHERE (name LIKE '%${user}%' OR name LIKE '%${user}%')`
 
-        mysql.query(query, [user, user],(err, result) => {
+        mysql.query(query, (err, result) => {
             if(err) throw err
             res.status(201).json(result)
          })
@@ -88,7 +90,7 @@ const createRoom =  (req, res) => {
     const room = req.body
     
     try {
-        const query = `CALL createRoom('${geneId()}', '${room.firstU}', '${room.secondU}') `
+        const query = `CALL createRoom('${geneId()}', '${room.firstU}', '${room.secondU}')`
 
         mysql.query(query, (err, result) => {
             if(err) throw err
@@ -137,7 +139,7 @@ const returnMesage = (message, io) => {
         })
 
     } catch (error) {
-        console.log(error)        
+        console.error(error)        
     }
 }
 
@@ -147,5 +149,6 @@ module.exports = {
     createRoom,
     getContacts,
     getMessages,
-    insertMessage
+    insertMessage, 
+    chatEventsEmitter
 }
