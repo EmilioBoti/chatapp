@@ -10,10 +10,10 @@ const { v4: geneId } = require("uuid")
 const { router } = require('./routers/authRouter')
 const chatRouter = require('./controller/chatBusiness/chatRouter')
 const { insertMessage } = require('./controller/chatBusiness/chatLogic')
+const { friendRequest } = require("./controller/users/searchLogic")
+const searchRouter = require("./controller/users/searchRounter")
 
-const { eventsEmitter  } = require("./controller/users/searchLogic")
-const { chatEventsEmitter  } = require("./controller/chatBusiness/chatLogic")
-
+const { PRIVATE_SMS, NOTIFICATION, USER_CONNECTION, parseToJson } = require("./controller/utils/const")
 
 const port = 3000
 
@@ -22,6 +22,7 @@ app.use(express.json())
 app.use(express.urlencoded({extended: false}));
 app.use('/api', router)
 app.use('/api', chatRouter.router)
+app.use('/api', searchRouter)
 
 
 const server = app.listen(app.get("port"), () => {
@@ -31,26 +32,24 @@ const server = app.listen(app.get("port"), () => {
 const io = new Server(server)
 
 io.on("connection", (socket) => {
-    
-    socket.on("user", (data) => {
-        const user = JSON.parse(data)
+    socket.on(USER_CONNECTION, (data) => {
+        const user = parseToJson(data)
         updateSocket(user.id, user.socketId)
     }) 
 
-    socket.on("private", (package) => {
-        const data = JSON.parse(package)
+    socket.on(PRIVATE_SMS, (package) => {
+        const data = parseToJson(package)
         insertMessage(data, io)
     })
 
-    
-    socket.on("notification", (data) => {
-        const package = JSON.parse(data)
+    socket.on(NOTIFICATION, (data) => {
+        const package = parseToJson(data)
         const user = {
             id: geneId(),
             ...package,
             accepted: false
         }
-        io.to(user.toSocketId).emit("notify", user)
+        friendRequest(user, io)
     })
     
     socket.on("disconnect", (reason) => {

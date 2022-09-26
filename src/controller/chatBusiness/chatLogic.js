@@ -70,16 +70,29 @@ const getContacts = async (req, res) => {
     }
 }
 
-const findUser =  (req, res) => {
+const findUser =  async (req, res) => {
     const user = req.params.user
 
     try {
+       
         const query = `SELECT id, name, email, socket_id as socketId FROM register_user WHERE (name LIKE '%${user}%' OR name LIKE '%${user}%')`
 
-        mysql.query(query, (err, result) => {
+        const query2 = `SELECT register_user.id, register_user.name,
+        register_user.email, register_user.socket_id as socketId,
+        notificationstack.accepted as state
+        FROM register_user
+        LEFT JOIN notificationstack
+        ON register_user.id = notificationstack.fromU
+        WHERE (register_user.name LIKE '%${user}%')`
+
+        const r = await mysql.query(query, async (err, results,) => {  
             if(err) throw err
-            res.status(201).json(result)
-         })
+            // results.forEach(element => {
+            //     if(element.accepted === 1) element.accepted = true
+            //     if(element.accepted === 0) element.accepted =  false
+            // });
+            res.status(201).json(results)
+        })
 
     } catch (error) {
         res.status(500).json(null)
@@ -137,7 +150,6 @@ const returnMesage = (message, io) => {
             if(err) throw err
             io.to(result[0].socket).to(result[1].socket).emit("message", JSON.stringify(message))
         })
-
     } catch (error) {
         console.error(error)        
     }
