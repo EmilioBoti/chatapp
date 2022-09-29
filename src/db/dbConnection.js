@@ -6,6 +6,7 @@ const connDB = mysql.createPool({
     user: 'root',
     host: 'localhost',
     password: '',
+    multipleStatements: true
 })
 
 

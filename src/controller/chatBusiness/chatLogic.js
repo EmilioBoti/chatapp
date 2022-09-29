@@ -4,10 +4,45 @@ const bcrypt = require("bcryptjs")
 const dayjs = require("dayjs")
 const events = require("events")
 
+const { encrypting, decrypt } = require("../../utils/encryting")
+
 const { getRooms } = require("../../services/user.service")
 
-const chatEventsEmitter = new events.EventEmitter()
+const acceptFriendRequest = (req, res) => {
+    const notification = req.body
 
+    try {
+        const query = `UPDATE notificationstack SET accepted = 1 WHERE id = '${notification.notificationId}'`
+        
+        const isRoomExists = `SELECT COUNT(*) as room FROM rooms 
+        WHERE (user_id = '${notification.fromU}' 
+               AND other_u_id = '${notification.toU}'
+              OR 
+               user_id = '${notification.toU}'
+               AND other_u_id = '${notification.fromU}'
+              )`
+
+        mysql.query(`${query};${isRoomExists}`, (err, results) => {
+            if(err) throw err
+            
+            if(results[1][0].room <= 0 ){
+                const query = `CALL createRoom('${geneId()}', '${notification.fromU}', '${notification.toU}')`
+        
+                mysql.query(query, (err, result) => {
+                    if(err) throw err
+                    res.status(201).json(result)
+                })
+            } else {
+                res.status(201).json(results)
+            }
+
+        })
+
+    } catch (error) {
+        
+    }
+
+}
 
 const getMessages = (req, res) => {
     const { roomId } = req.params
@@ -15,7 +50,7 @@ const getMessages = (req, res) => {
     try {
         const query = `SELECT message.room_id as roomId, message.id as messageId, message.from_u_id as fromU,
         message.to_u_id as toU, register_user.name as userName,
-        message.message, message.date_created as times
+        message.message, message.date_created as times, smsHash
         FROM message
         INNER JOIN register_user 
         ON register_user.id = message.from_u_id
@@ -23,10 +58,11 @@ const getMessages = (req, res) => {
         ORDER BY times
         `
 
-        mysql.query(query, [roomId] ,(err, result) => {
+        mysql.query(query, [roomId] , (err, result) => {
             if(err) throw err
             const messages = result.map( item =>  {
                 item.times = dayjs(item.times).format('HH:mm a')
+                item.message = decrypt({ "iv": item.smsHash, "content": item.message })
                 return item
             })
             res.status(201).json(messages)
@@ -44,8 +80,13 @@ const getContacts = async (req, res) => {
     try {
         const query = `SELECT userroom.roomId, register_user.id,
         register_user.socket_id as socketId, register_user.name,
-        register_user.email, message.date_created as dates,
-        (SELECT message.message 
+        register_user.email, message.date_created as dates, 
+        (SELECT message.smsHash
+            FROM message 
+            WHERE message.room_id = userroom.roomId
+            ORDER BY message.date_created DESC
+            LIMIT 1) as smsHash,
+        (SELECT message.message
         FROM message 
         WHERE message.room_id = userroom.roomId
         ORDER BY message.date_created DESC
@@ -55,13 +96,19 @@ const getContacts = async (req, res) => {
         ON register_user.id = userroom.userId
         INNER JOIN register_user as users
         ON users.id = userroom.otherUserId
-        INNER JOIN message 
+        LEFT JOIN message 
         ON message.to_u_id = users.id
         WHERE users.id = ?
         GROUP BY register_user.email`
 
         mysql.query(query, [id] ,(err, result) => {
             if(err) throw err  
+
+            result.forEach( (item) => {
+                if(item.lastMessage !== null || item.smsHash !== null) {
+                    item.lastMessage = decrypt({ "iv": item.smsHash, "content": item.lastMessage })
+                }
+            })
             res.status(201).json(result)
          })
 
@@ -116,7 +163,7 @@ const createRoom =  (req, res) => {
 
 }
 
-const insertMessage = (data, io) => {
+const insertMessage = async (data, io) => {
     if(data.message !== "" || data.message !== null) {
 
         const time = dayjs().format()
@@ -125,12 +172,13 @@ const insertMessage = (data, io) => {
             id: geneId(),
             times: dayjs().format('HH:mm a')
         }
+        const hash = encrypting(message.message)
 
         try {
-            const query = `INSERT INTO message (id, from_u_id, to_u_id, message, date_created, room_id)
-            VALUES (?,?,?,?,?,?)`
+            const query = `INSERT INTO message (id, from_u_id, to_u_id, message, date_created, room_id, smsHash)
+            VALUES (?,?,?,?,?,?,?)`
     
-            mysql.query(query,[message.id, message.fromU, message.toU, message.message.trim(), time , message.roomId] ,(err, result) => {
+            mysql.query(query,[message.id, message.fromU, message.toU, hash.content, time , message.roomId, hash.iv] ,(err, result) => {
                 if(err) throw err
                 returnMesage(message, io)
             })
@@ -141,7 +189,7 @@ const insertMessage = (data, io) => {
     }
 }
 
-const returnMesage = (message, io) => {
+const returnMesage = async (message, io) => {
     try {
         const query = `SELECT socket_id as socket FROM register_user
         WHERE (id = ? OR id = ?)`
@@ -161,6 +209,6 @@ module.exports = {
     createRoom,
     getContacts,
     getMessages,
-    insertMessage, 
-    chatEventsEmitter
+    insertMessage,
+    acceptFriendRequest
 }
