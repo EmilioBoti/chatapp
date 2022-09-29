@@ -8,7 +8,7 @@ router.get("/chat/:user", chat.findUser)
 router.get("/contacts/:id", chat.getContacts)
 router.get("/messages/:roomId", chat.getMessages)
 router.post("/createRoom", chat.createRoom)
-router.post("/friendRequest", chat.acceptFriendRequest)
+router.post("/acceptNotification", chat.acceptFriendRequest)
 
 
 module.exports = { router }

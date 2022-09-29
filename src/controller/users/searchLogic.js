@@ -13,10 +13,8 @@ const friendRequest = (user, io) => {
 
             if(result[0].isExists === 0) {
                 insertNotification(user, io)
-                console.log("could insert noti")
             } else {
                 io.to(user.toSocketId).emit(NOTIFY, null)
-                console.log("could notinsert noti")
             }
         }) 
     } catch (error) {

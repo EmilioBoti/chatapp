@@ -2,7 +2,7 @@ const { v4: geneId } = require("uuid")
 const mysql = require("../../db/dbConnection")
 const bcrypt = require("bcryptjs")
 const dayjs = require("dayjs")
-const events = require("events")
+
 
 const { encrypting, decrypt } = require("../../utils/encryting")
 
@@ -14,7 +14,7 @@ const acceptFriendRequest = (req, res) => {
     try {
         const query = `UPDATE notificationstack SET accepted = 1 WHERE id = '${notification.notificationId}'`
         
-        const isRoomExists = `SELECT COUNT(*) as room FROM rooms 
+        const isRoomExists = `SELECT COUNT(*) as room FROM rooms
         WHERE (user_id = '${notification.fromU}' 
                AND other_u_id = '${notification.toU}'
               OR 
@@ -25,21 +25,26 @@ const acceptFriendRequest = (req, res) => {
         mysql.query(`${query};${isRoomExists}`, (err, results) => {
             if(err) throw err
             
-            if(results[1][0].room <= 0 ){
+            if(results[1][0].room <= 0 ) {
                 const query = `CALL createRoom('${geneId()}', '${notification.fromU}', '${notification.toU}')`
         
                 mysql.query(query, (err, result) => {
                     if(err) throw err
-                    res.status(201).json(result)
+                    res.status(201).json({
+                        accepted: true
+                    })
                 })
             } else {
-                res.status(201).json(results)
+                res.status(201).json({
+                    accepted: true
+                })
             }
 
         })
 
-    } catch (error) {
-        
+    } catch (err) {
+        console.error(err)
+        res.status(500).json(null)
     }
 
 }
