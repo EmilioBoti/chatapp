@@ -54,16 +54,16 @@ const getNotifications = (req, res) => {
         ON register_user.id = notificationstack.toU
         INNER JOIN register_user as users 
         ON users.id = notificationstack.fromU
-        WHERE (notificationstack.toU = ?
-               AND notificationstack.accepted = false)
+        WHERE (notificationstack.toU = ?)
         GROUP BY users.id
+        LIMIT 15
         `
         
         mysql.query(query, [id] ,(err, result) => {
             if(err) throw err
 
             result.forEach(element => {
-                element.state === 1 ? element.state = true : element.state = false 
+                element.state === 1 ? element.state = true : element.state = false
             });
             res.status(201).json(result)
         })   

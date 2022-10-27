@@ -1,59 +1,16 @@
 const { v4: geneId } = require("uuid")
 const mysql = require("../../db/dbConnection")
-const bcrypt = require("bcryptjs")
 const dayjs = require("dayjs")
 
 
 const { encrypting, decrypt } = require("../../utils/encryting")
 
-const { getRooms } = require("../../services/user.service")
-
-const acceptFriendRequest = (req, res) => {
-    const notification = req.body
-
-    try {
-        const query = `UPDATE notificationstack SET accepted = 1 WHERE id = '${notification.notificationId}'`
-        
-        const isRoomExists = `SELECT COUNT(*) as room FROM rooms
-        WHERE (user_id = '${notification.fromU}' 
-               AND other_u_id = '${notification.toU}'
-              OR 
-               user_id = '${notification.toU}'
-               AND other_u_id = '${notification.fromU}'
-              )`
-
-        mysql.query(`${query};${isRoomExists}`, (err, results) => {
-            if(err) throw err
-            
-            if(results[1][0].room <= 0 ) {
-                const query = `CALL createRoom('${geneId()}', '${notification.fromU}', '${notification.toU}')`
-        
-                mysql.query(query, (err, result) => {
-                    if(err) throw err
-                    res.status(201).json({
-                        accepted: true
-                    })
-                })
-            } else {
-                res.status(201).json({
-                    accepted: true
-                })
-            }
-
-        })
-
-    } catch (err) {
-        console.error(err)
-        res.status(500).json(null)
-    }
-
-}
-
 const getMessages = (req, res) => {
     const { roomId } = req.params
 
     try {
-        const query = `SELECT message.room_id as roomId, message.id as messageId, message.from_u_id as fromU,
+        const query = `SELECT message.room_id as roomId,
+        message.id as messageId, message.from_u_id as fromU,
         message.to_u_id as toU, register_user.name as userName,
         message.message, message.date_created as times, smsHash
         FROM message
@@ -85,7 +42,12 @@ const getContacts = async (req, res) => {
     try {
         const query = `SELECT userroom.roomId, register_user.id,
         register_user.socket_id as socketId, register_user.name,
-        register_user.email, message.date_created as dates, 
+        register_user.email,
+        (SELECT message.date_created
+            FROM message 
+            WHERE message.room_id = userroom.roomId
+            ORDER BY message.date_created DESC
+            LIMIT 1) as times, 
         (SELECT message.smsHash
             FROM message 
             WHERE message.room_id = userroom.roomId
@@ -111,6 +73,7 @@ const getContacts = async (req, res) => {
 
             result.forEach( (item) => {
                 if(item.lastMessage !== null || item.smsHash !== null) {
+                    item.times = dayjs(item.times).format('HH:mm a')
                     item.lastMessage = decrypt({ "iv": item.smsHash, "content": item.lastMessage })
                 }
             })
@@ -128,21 +91,9 @@ const findUser =  async (req, res) => {
     try {
        
         const query = `SELECT id, name, email, socket_id as socketId FROM register_user WHERE (name LIKE '%${user}%' OR name LIKE '%${user}%')`
-
-        const query2 = `SELECT register_user.id, register_user.name,
-        register_user.email, register_user.socket_id as socketId,
-        notificationstack.accepted as state
-        FROM register_user
-        LEFT JOIN notificationstack
-        ON register_user.id = notificationstack.fromU
-        WHERE (register_user.name LIKE '%${user}%')`
-
-        const r = await mysql.query(query, async (err, results,) => {  
+        
+        mysql.query(query, async (err, results,) => {  
             if(err) throw err
-            // results.forEach(element => {
-            //     if(element.accepted === 1) element.accepted = true
-            //     if(element.accepted === 0) element.accepted =  false
-            // });
             res.status(201).json(results)
         })
 
@@ -214,6 +165,5 @@ module.exports = {
     createRoom,
     getContacts,
     getMessages,
-    insertMessage,
-    acceptFriendRequest
+    insertMessage
 }

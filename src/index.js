@@ -12,6 +12,7 @@ const chatRouter = require('./controller/chatBusiness/chatRouter')
 const { insertMessage } = require('./controller/chatBusiness/chatLogic')
 const { friendRequest } = require("./controller/users/searchLogic")
 const searchRouter = require("./controller/users/searchRounter")
+const notificationRouter = require("./controller/notification/notification.router")
 
 const { PRIVATE_SMS, NOTIFICATION, USER_CONNECTION, parseToJson } = require("./controller/utils/const")
 
@@ -23,6 +24,7 @@ app.use(express.urlencoded({extended: false}));
 app.use('/api', router)
 app.use('/api', chatRouter.router)
 app.use('/api', searchRouter)
+app.use('/api', notificationRouter.router)
 
 
 const server = app.listen(app.get("port"), () => {
