@@ -91,7 +91,7 @@ const findUser =  async (req, res) => {
     try {
        
         const query = `SELECT id, name, email, socket_id as socketId FROM register_user WHERE (name LIKE '%${user}%' OR name LIKE '%${user}%')`
-        
+
         mysql.query(query, async (err, results,) => {  
             if(err) throw err
             res.status(201).json(results)
@@ -160,7 +160,6 @@ const returnMesage = async (message, io) => {
 }
 
 module.exports = {
-    getRooms,
     findUser,
     createRoom,
     getContacts,
