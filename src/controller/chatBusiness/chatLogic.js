@@ -57,8 +57,9 @@ const getContacts = async (req, res) => {
         FROM message 
         WHERE message.room_id = userroom.roomId
         ORDER BY message.date_created DESC
-        LIMIT 1) as lastMessage
-        FROM userroom 
+        LIMIT 1) as lastMessage,
+        users.id as toUser
+        FROM userroom
         INNER JOIN register_user
         ON register_user.id = userroom.userId
         INNER JOIN register_user as users
@@ -121,20 +122,22 @@ const createRoom =  (req, res) => {
 
 const insertMessage = async (data, io) => {
     if(data.message !== "" || data.message !== null) {
-
+        
         const time = dayjs().format()
         const message = {
             ...data,
-            id: geneId(),
             times: dayjs().format('HH:mm a')
         }
+        if(message.messageId === null || message.messageId === undefined ) {
+            message.messageId = geneId()
+        }
+        
         const hash = encrypting(message.message)
-
         try {
             const query = `INSERT INTO message (id, from_u_id, to_u_id, message, date_created, room_id, smsHash)
-            VALUES (?,?,?,?,?,?,?)`
-    
-            mysql.query(query,[message.id, message.fromU, message.toU, hash.content, time , message.roomId, hash.iv] ,(err, result) => {
+            VALUES (?,?,?,?,CURRENT_TIMESTAMP,?,?)`
+
+            mysql.query(query,[message.messageId, message.fromU, message.toU, hash.content, message.roomId, hash.iv] ,(err, result) => {
                 if(err) throw err
                 returnMesage(message, io)
             })
@@ -148,11 +151,11 @@ const insertMessage = async (data, io) => {
 const returnMesage = async (message, io) => {
     try {
         const query = `SELECT socket_id as socket FROM register_user
-        WHERE (id = ? OR id = ?)`
+        WHERE id = ?`
 
-        mysql.query(query,[message.fromU, message.toU],(err, result) => {
+        mysql.query(query,[message.toU],(err, result) => {
             if(err) throw err
-            io.to(result[0].socket).to(result[1].socket).emit("message", JSON.stringify(message))
+            io.to(result[0].socket).emit("message", JSON.stringify(message))
         })
     } catch (error) {
         console.error(error)        

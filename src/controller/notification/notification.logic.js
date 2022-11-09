@@ -20,12 +20,14 @@ const acceptFriendRequest = (req, res) => {
             if(err) throw err
             
             if(results[1][0].room <= 0 ) {
-                const query = `CALL createRoom('${geneId()}', '${fromU}', '${toU}')`
+                const roomId = geneId()
+                const query = `CALL createRoom('${roomId}', '${fromU}', '${toU}')`
                 
                 mysql.query(query, (err, result) => {
                     if(err) throw err
                     res.status(201).json({
-                        accepted: true
+                        accepted: true,
+                        roomId
                     })
                 })
             } else {
