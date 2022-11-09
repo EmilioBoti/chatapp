@@ -1,8 +1,7 @@
 const mysql = require("../../db/dbConnection") 
-
 const { NOTIFY } = require("../utils/const")
 
-const friendRequest = (user, io) => { 
+const friendRequest = (user, io) => {
     
     try {
         const checkQuery = `SELECT COUNT(*) as isExists FROM notificationstack

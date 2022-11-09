@@ -1,7 +1,7 @@
 const { v4: geneId } = require("uuid")
 const mysql = require("../../db/dbConnection")
 const bcrypt = require("bcryptjs")
-
+const {sendingMail } = require("../../email/email")
 
 
 const register =  async (req, res) => {
@@ -13,7 +13,7 @@ const register =  async (req, res) => {
         email: req.body.email,
         pw: passW
     }
-   
+    
     try {
         const query = `INSERT INTO register_user (id, name , email, pw, date_created)
         values("${user.id}", "${user.name}","${user.email.toLowerCase()}", "${user.pw}", CURRENT_TIMESTAMP)
@@ -21,6 +21,7 @@ const register =  async (req, res) => {
         mysql.query(query, (error, result) => {
         
             if(error) throw error
+            sendingMail()
             res.status(201).json({
                 OK: true,
                 body: user
