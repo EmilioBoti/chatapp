@@ -1,6 +1,5 @@
 const nodemailer = require("nodemailer")
 const nodemailerSendGrid = require("nodemailer-sendgrid")
-const key = "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"
 const templete = require("./tempplete/templete")
 
 const createTransport = () => {
