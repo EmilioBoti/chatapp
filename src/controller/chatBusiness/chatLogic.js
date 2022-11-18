@@ -12,7 +12,7 @@ const getMessages = (req, res) => {
         const query = `SELECT message.room_id as roomId,
         message.id as messageId, message.from_u_id as fromU,
         message.to_u_id as toU, register_user.name as userName,
-        message.message, message.date_created as times, smsHash
+        message.message, timestamp(message.date_created) as times, smsHash
         FROM message
         INNER JOIN register_user 
         ON register_user.id = message.from_u_id
@@ -23,7 +23,6 @@ const getMessages = (req, res) => {
         mysql.query(query, [roomId] , (err, result) => {
             if(err) throw err
             const messages = result.map( item =>  {
-                item.times = dayjs(item.times).format('HH:mm a')
                 item.message = decrypt({ "iv": item.smsHash, "content": item.message })
                 return item
             })
