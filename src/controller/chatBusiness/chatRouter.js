@@ -1,7 +1,7 @@
 const express = require("express")
 const router = express.Router()
 
-const chat = require("./chatLogic")
+const chat = require("./chatController")
 
 router.get("/chat/:user", chat.findUser)
 router.get("/contacts/:id", chat.getContacts)

@@ -9,7 +9,7 @@ const { v4: geneId } = require("uuid")
 
 const { router } = require('./controller/auth/routers/authRouter')
 const chatRouter = require('./controller/chatBusiness/chatRouter')
-const { insertMessage } = require('./controller/chatBusiness/chatLogic')
+const { insertMessage } = require('./controller/chatBusiness/chatController')
 const { friendRequest } = require("./controller/users/searchLogic")
 const searchRouter = require("./controller/users/searchRounter")
 const notificationRouter = require("./controller/notification/notification.router")
