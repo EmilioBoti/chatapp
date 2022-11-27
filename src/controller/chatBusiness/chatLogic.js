@@ -3,7 +3,7 @@ const mysql = require("../../db/dbConnection")
 const dayjs = require("dayjs")
 
 
-const { encrypting, decrypt } = require("../../utils/encryting")
+const { encrypting, decrypt } = require("../utils/encryting")
 
 const getMessages = (req, res) => {
     const { roomId } = req.params

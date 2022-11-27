@@ -7,7 +7,7 @@ const { Server } = require("socket.io")
 
 const { v4: geneId } = require("uuid")
 
-const { router } = require('./routers/authRouter')
+const { router } = require('./controller/auth/routers/authRouter')
 const chatRouter = require('./controller/chatBusiness/chatRouter')
 const { insertMessage } = require('./controller/chatBusiness/chatLogic')
 const { friendRequest } = require("./controller/users/searchLogic")
