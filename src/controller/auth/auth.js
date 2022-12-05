@@ -35,13 +35,19 @@ const register = async (req, res) => {
                 sendingMail(user)
                 res.status(201).json({
                     OK: true,
-                    errorMessage: Enum.SUCCESS,
-                    token
+                    message: Enum.SUCCESS,
+                    user: { 
+                        id: data.body.id,
+                        name: data.body.name,
+                        email: data.body.email
+                    },
+                    token: token
                 })
             } else {
                 res.status(500).json({
                     OK: false,
-                    errorMessage: Enum.FAIL,
+                    message: Enum.FAIL,
+                    user: null,
                     token: null
                 })
             }
