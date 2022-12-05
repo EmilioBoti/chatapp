@@ -3,7 +3,8 @@ const mysql = require("../../db/dbConnection")
 const dayjs = require("dayjs")
 
 const { encrypting, decrypt } = require("../utils/encryting")
-const { archiveRoomMessages, archiveUserContacts, searchUsers } = require("../../services/chatServices/chatService")
+const { archiveRoomMessages, archiveUserContacts, searchUsers, saveMessage } = require("../../services/chatServices/chatService")
+const jwt = require("jsonwebtoken")
 
 const getMessages = (req, res) => {
     const { roomId } = req.params
@@ -14,16 +15,20 @@ const getMessages = (req, res) => {
                 item.message = decrypt({ "iv": item.smsHash, "content": item.message })
                 return item
             })
-            res.status(201).json(obj)
+            res.status(201).json(obj.body)
+        } else {
+            res.status(501).json(obj.body)
         }
     })
 
 }
 
 const getContacts = async (req, res) => {
-    const id = req.params.id
+    let token = req.headers.authorization
+    if (token.includes("Bearer ")) token = token.slice(7)
+    const user = jwt.verify(token, process.env.JWTKEY)
 
-    archiveUserContacts(id, (obj) => {
+    archiveUserContacts(user.id, (obj) => {
         if (obj.OK) {
             obj.body.forEach((item) => {
                 if (item.lastMessage !== null || item.smsHash !== null) {
@@ -33,7 +38,10 @@ const getContacts = async (req, res) => {
             })
             res.status(201).json(obj)
         } else {
-            res.status(400).json(obj)
+            res.status(400).json({
+                OK: false,
+                body: []
+            })
         }
     })
 }
@@ -63,45 +71,55 @@ const createRoom = (req, res) => {
 
 }
 
-const insertMessage = async (data, io) => {
-    if (data.message !== "" || data.message !== null) {
+const insertMessage = async (data, fun) => {
+    if (data.message !== " " || data.message !== null) {
 
         const time = dayjs().format()
         const message = {
-            ...data,
-            times: dayjs().format('HH:mm a')
+            ...data
         }
         if (message.messageId === null || message.messageId === undefined) {
             message.messageId = geneId()
         }
 
         const hash = encrypting(message.message)
-        try {
-            const query = `INSERT INTO message (id, from_u_id, to_u_id, message, date_created, room_id, smsHash)
-            VALUES (?,?,?,?,CURRENT_TIMESTAMP,?,?)`
 
-            mysql.query(query, [message.messageId, message.fromU, message.toU, hash.content, message.roomId, hash.iv], (err, result) => {
-                if (err) throw err
-                returnMesage(message, io)
-            })
+        saveMessage(message, hash, (socketId, data) => {
+            fun(socketId, data)
+        })
 
-        } catch (error) {
-            console.log(error)
-        }
     }
 }
 
-const returnMesage = async (message, io) => {
-    try {
-        const query = `SELECT socket_id as socket FROM register_user
-        WHERE id = ?`
+/**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next  
+ * @returns 
+ */
+const auth = (req, res, next) => {
+    let token = req.headers.authorization
 
-        mysql.query(query, [message.toU], (err, result) => {
-            if (err) throw err
-            io.to(result[0].socket).emit("message", JSON.stringify(message))
+    if (!token) {
+        return res.status(401).json({
+            ok: false,
+            error: "Bad request, require a token",
+            body: null
         })
-    } catch (error) {
-        console.error(error)
+    }
+
+    try {
+        if (token.includes("Bearer ")) token = token.slice(7)
+        const verified = jwt.verify(token, process.env.JWTKEY)
+        req.user = verified
+        next()
+    } catch (err) {
+        res.status(401).json({
+            ok: false,
+            error: "Unauthorized",
+            body: null
+        })
     }
 }
 
@@ -110,5 +128,6 @@ module.exports = {
     createRoom,
     getContacts,
     getMessages,
-    insertMessage
+    insertMessage,
+    auth
 }
