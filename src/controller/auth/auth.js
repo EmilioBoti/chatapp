@@ -70,16 +70,31 @@ const login = async (req, res) => {
                     name: data.body.name,
                     email: data.body.email
                 })
-                res.status(201).json(token)
+
+                res.status(201).json({
+                    OK: true,
+                    message: Enum.SUCCESS,
+                    user: { 
+                        id: data.body.id,
+                        name: data.body.name,
+                        email: data.body.email
+                    },
+                    token: token
+                })
             } else {
-                res.status(400).json(data)
+                res.status(400).json({
+                    OK: false,
+                    message: Enum.FAIL,
+                    user: null,
+                    token: null
+                })
             }
         })
 
     } else {
         res.status(400).json({
             OK: false,
-            errorMessage: Enum.FAIL,
+            message: Enum.FAIL,
             token: null
         })
     }
