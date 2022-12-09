@@ -83,7 +83,6 @@ const getNotifications = (req, res) => {
         INNER JOIN register_user as users 
         ON users.id = notificationstack.fromU
         WHERE (notificationstack.toU = ?)
-        GROUP BY users.id
         LIMIT 15
         `
         
