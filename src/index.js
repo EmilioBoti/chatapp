@@ -7,9 +7,9 @@ const { Server } = require("socket.io")
 
 const { v4: geneId } = require("uuid")
 
-const { router } = require('./routers/authRouter')
+const { router } = require('./controller/auth/routers/authRouter')
 const chatRouter = require('./controller/chatBusiness/chatRouter')
-const { insertMessage } = require('./controller/chatBusiness/chatLogic')
+const { insertMessage } = require('./controller/chatBusiness/chatController')
 const { friendRequest } = require("./controller/users/searchLogic")
 const searchRouter = require("./controller/users/searchRounter")
 const notificationRouter = require("./controller/notification/notification.router")
@@ -34,14 +34,14 @@ const server = app.listen(app.get("port"), () => {
 const io = new Server(server)
 
 io.on("connection", (socket) => {
-    socket.on(USER_CONNECTION, (data) => {
-        const user = parseToJson(data)
-        updateSocket(user.id, user.socketId)
-    }) 
+    const id = socket.handshake.auth.token
+    updateSocket(id, socket.id)
 
     socket.on(PRIVATE_SMS, (package) => {
         const data = parseToJson(package)
-        insertMessage(data, io)
+        insertMessage(data, (socketId, data) => {
+            io.to(socketId).emit("message", JSON.stringify(data))
+        })
     })
 
     socket.on(NOTIFICATION, (data) => {

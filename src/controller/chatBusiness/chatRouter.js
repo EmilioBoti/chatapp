@@ -1,12 +1,12 @@
 const express = require("express")
 const router = express.Router()
 
-const chat = require("./chatLogic")
+const { findUser, getContacts, getMessages, createRoom, auth } = require("./chatController")
 
-router.get("/chat/:user", chat.findUser)
-router.get("/contacts/:id", chat.getContacts)
-router.get("/messages/:roomId", chat.getMessages)
-router.post("/createRoom", chat.createRoom)
+router.get("/chat/:user", auth, findUser)
+router.get("/contacts", auth, getContacts)
+router.get("/messages/:roomId", auth, getMessages)
+router.post("/createRoom", auth, createRoom)
 
 
 module.exports = { router }

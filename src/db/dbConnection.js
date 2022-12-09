@@ -2,10 +2,11 @@ const mysql = require('mysql')
 
 
 const connDB = mysql.createPool({
-    database: 'chatapp',
-    user: 'root',
-    host: 'localhost',
-    password: '',
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    host: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
     multipleStatements: true
 })
 
