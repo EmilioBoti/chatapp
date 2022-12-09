@@ -50,7 +50,7 @@ const findUser = async (req, res) => {
     const user = req.params.user
 
     searchUsers(user, (obj) => {
-        res.status(201).json(obj)
+        res.status(201).json(obj.body)
     })
 }
 
