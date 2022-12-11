@@ -1,6 +1,8 @@
 const { v4: geneId } = require("uuid")
 const mysql = require("../../db/dbConnection")
-
+const { getUserNotifications } = require("../../services/notificationServices/notificationService")
+const jwt = require("jsonwebtoken")
+const { removeBearerToken } = require("../utils/helpers")
 
 const acceptFriendRequest = (req, res) => {
     const { notificationId, fromU, toU } = req.body
@@ -69,35 +71,16 @@ const rejectFriendRequest = (req, res) => {
 
 const getNotifications = (req, res) => { 
 
-    const id = req.params.id
+    let token = req.headers.authorization
+    const user = jwt.verify(removeBearerToken(token), process.env.JWTKEY)
     
-    try {
-        const query = `SELECT notificationstack.id as notificationId, notificationstack.fromU as fromU,
-        notificationstack.toU as toU,
-        users.name, users.socket_id as socketId, users.email,
-        notificationstack.dateCreated,
-        notificationstack.accepted as state
-        FROM notificationstack
-        INNER JOIN register_user
-        ON register_user.id = notificationstack.toU
-        INNER JOIN register_user as users 
-        ON users.id = notificationstack.fromU
-        WHERE (notificationstack.toU = ?)
-        LIMIT 15
-        `
-        
-        mysql.query(query, [id] ,(err, result) => {
-            if(err) throw err
-
-            result.forEach(element => {
-                element.state === 1 ? element.state = true : element.state = false
-            });
-            res.status(201).json(result)
-        })   
-        
-    } catch (error) {
-        res.status(501).json(null)
-    } 
+    getUserNotifications(user.id, (result) => {
+        if (result.OK) {
+            res.status(201).json(result.body)
+        } else {
+            res.status(501).json(result.body)
+        }
+    })
 
 }
 
