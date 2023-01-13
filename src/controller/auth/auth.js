@@ -5,6 +5,8 @@ const { sendingMail } = require("../../email/email")
 
 const { createToken } = require("../utils/jwt")
 const { validCredencials, updateUserSocket, registerNewUser } = require("../../services/authServices/authService")
+const { removeBearerToken } = require("../utils/helpers")
+const jwt = require("jsonwebtoken")
 
 const regexEmail = /(^\w+)(\@{1})([a-zA-Z]+)(\.)[a-zA-Z]+/
 
@@ -108,8 +110,15 @@ const login = async (req, res) => {
 }
 
 
-const updateSocket = (id, socketId) => {
-    updateUserSocket(id, socketId, () => { })
+const updateSocket = (token, socketId) => {
+    try {
+        if (!token) return
+        
+        const payload = jwt.verify(removeBearerToken(token), process.env.JWTKEY)
+        updateUserSocket(payload.id, socketId, () => { })
+    } catch (error) {
+        console.log(error)
+    }
 }
 
 function validEmail(email) {

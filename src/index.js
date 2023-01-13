@@ -4,6 +4,7 @@ const express = require('express')
 const app = express()
 const { updateSocket } = require("./controller/auth/auth")
 const { Server } = require("socket.io")
+const cors = require('cors');
 
 const { v4: geneId } = require("uuid")
 
@@ -19,6 +20,7 @@ const { PRIVATE_SMS, NOTIFICATION, USER_CONNECTION, parseToJson } = require("./c
 const port = 3000
 
 app.set('port', process.env.PORT || port)
+app.use(cors({ origin: true }));
 app.use(express.json())
 app.use(express.urlencoded({extended: false}));
 app.use('/api', router)
@@ -34,8 +36,8 @@ const server = app.listen(app.get("port"), () => {
 const io = new Server(server)
 
 io.on("connection", (socket) => {
-    const id = socket.handshake.auth.token
-    updateSocket(id, socket.id)
+    const token = socket.handshake.auth.token
+    updateSocket(token, socket.id)
 
     socket.on(PRIVATE_SMS, (package) => {
         const data = parseToJson(package)
