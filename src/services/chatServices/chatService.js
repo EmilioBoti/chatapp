@@ -84,17 +84,11 @@ const saveMessage = (message, hash, fun) => {
         mysql.query(queryInsertSms, [message.messageId, message.fromU, message.toU, hash.content, message.roomId, hash.iv],
             (err, result) => {
                 if (err) throw err
-
-                returnMesage(message, (socketId) => {
-                    fun(socketId, message)
-                })
+                fun(true)
             })
 
     } catch (error) {
-        fun({
-            OK: false,
-            body: null
-        })
+        fun(false)
     }
 }
 

@@ -1,5 +1,5 @@
 const queryUserContacts = `SELECT userroom.roomId, register_user.id,
-    register_user.socket_id as socketId, register_user.name,
+    register_user.name,
     register_user.email,
     (SELECT message.date_created
         FROM message 
@@ -16,7 +16,8 @@ const queryUserContacts = `SELECT userroom.roomId, register_user.id,
     WHERE message.room_id = userroom.roomId
     ORDER BY message.date_created DESC
     LIMIT 1) as lastMessage,
-    users.id as toUser
+    users.id as toUser,
+    register_user.public_id, register_user.image_url
     FROM userroom
     INNER JOIN register_user
     ON register_user.id = userroom.userId
@@ -31,7 +32,8 @@ const queryUserContacts = `SELECT userroom.roomId, register_user.id,
 const queryGetMessages = `SELECT message.room_id as roomId,
     message.id as messageId, message.from_u_id as fromU,
     message.to_u_id as toU, register_user.name as userName,
-    message.message, timestamp(message.date_created) as times, smsHash
+    message.message, timestamp(message.date_created) as times, smsHash,
+    register_user.public_id, register_user.image_url
     FROM message
     INNER JOIN register_user 
     ON register_user.id = message.from_u_id

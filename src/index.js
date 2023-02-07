@@ -7,6 +7,9 @@ const { Server } = require("socket.io")
 const cors = require('cors');
 
 const { v4: geneId } = require("uuid")
+const jwt = require("jsonwebtoken")
+const { removeBearerToken } = require("./controller/utils/helpers")
+const { createNewConnection, getSession, setNewconnection } = require("./controller/session/onlineManager")
 
 const { router } = require('./controller/auth/routers/authRouter')
 const chatRouter = require('./controller/chatBusiness/chatRouter')
@@ -33,16 +36,41 @@ const server = app.listen(app.get("port"), () => {
     console.log(`Listennig in por ${app.get("port")}`)
 })
 
-const io = new Server(server)
+const io = new Server(server, {
+    cors: {
+        origin: "*"
+    }
+})
+
+io.use((socket, next) => {
+    const creden = socket.handshake.auth
+    const data = creden.token
+
+    const user = jwt.verify(removeBearerToken(data), process.env.JWTKEY)
+    const session = getSession(user.id)
+
+    if (session) {
+        socket.session = session
+        return next()
+    }
+
+    const newSession = createNewConnection(user)
+    setNewconnection(user.id, newSession)
+    socket.session = newSession
+
+    next()
+})
 
 io.on("connection", (socket) => {
-    const token = socket.handshake.auth.token
-    updateSocket(token, socket.id)
+
+    socket.join(socket.session.userId)
 
     socket.on(PRIVATE_SMS, (package) => {
         const data = parseToJson(package)
-        insertMessage(data, (socketId, data) => {
-            io.to(socketId).emit("message", JSON.stringify(data))
+        insertMessage(data, (isInserted, message) => {
+            if (isInserted) {
+                io.to(data.toU).to(socket.session.userId).emit("message", message)
+            }
         })
     })
 
