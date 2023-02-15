@@ -32,7 +32,6 @@ const getContacts = async (req, res) => {
         if (obj.OK) {
             obj.body.forEach((item) => {
                 if (item.lastMessage !== null || item.smsHash !== null) {
-                    item.times = dayjs(item.times).format('HH:mm a')
                     item.lastMessage = decrypt({ "iv": item.smsHash, "content": item.lastMessage })
                 }
             })
