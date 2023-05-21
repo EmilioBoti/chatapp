@@ -17,6 +17,7 @@ const { insertMessage } = require('./controller/chatBusiness/chatController')
 const { friendRequest } = require("./controller/users/searchLogic")
 const searchRouter = require("./controller/users/searchRounter")
 const notificationRouter = require("./controller/notification/notification.router")
+const { profileRouter } = require("./controller/profile/profileRouter")
 
 const { PRIVATE_SMS, NOTIFICATION, USER_CONNECTION, parseToJson } = require("./controller/utils/const")
 
@@ -27,6 +28,7 @@ app.use(cors({ origin: true }));
 app.use(express.json())
 app.use(express.urlencoded({extended: false}));
 app.use('/api', router)
+app.use('/api', profileRouter)
 app.use('/api', chatRouter.router)
 app.use('/api', searchRouter)
 app.use('/api', notificationRouter.router)
