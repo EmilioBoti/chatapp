@@ -6,7 +6,7 @@ const notificationLogic = require("./notification.logic")
 
 router.post("/acceptNotification", auth , notificationLogic.acceptFriendRequest)
 router.post("/rejectNotification", auth, notificationLogic.rejectFriendRequest)
-router.get("/notifications/:id", auth, notificationLogic.getNotifications)
+router.get("/notifications", auth, notificationLogic.getNotifications)
 
 
 module.exports = { router }

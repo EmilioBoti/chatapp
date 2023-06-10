@@ -32,7 +32,6 @@ const getContacts = async (req, res) => {
         if (obj.OK) {
             obj.body.forEach((item) => {
                 if (item.lastMessage !== null || item.smsHash !== null) {
-                    item.times = dayjs(item.times).format('HH:mm a')
                     item.lastMessage = decrypt({ "iv": item.smsHash, "content": item.lastMessage })
                 }
             })
@@ -73,10 +72,10 @@ const createRoom = (req, res) => {
 
 const insertMessage = async (data, fun) => {
     if (data.message !== " " || data.message !== null) {
-
-        const time = dayjs().format()
+        const time = dayjs().toISOString()
         const message = {
-            ...data
+            ...data,
+            times: time
         }
         if (message.messageId === null || message.messageId === undefined) {
             message.messageId = geneId()
@@ -84,8 +83,8 @@ const insertMessage = async (data, fun) => {
 
         const hash = encrypting(message.message)
 
-        saveMessage(message, hash, (socketId, data) => {
-            fun(socketId, data)
+        saveMessage(message, hash, (isInserted) => {
+            fun(isInserted, message)
         })
 
     }
