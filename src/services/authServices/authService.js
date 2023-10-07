@@ -3,6 +3,7 @@ const mysql = require("../../db/dbConnection")
 const bcrypt = require("bcryptjs")
 
 const { loginQuery, updateSocketQuery, insertUserQuery } = require("./authQueries")
+const { Error } = require("../entity/apiError")
 
 /**
  * 
@@ -39,42 +40,31 @@ const registerNewUser = (user, registerCallBack) => {
  * @param {*} pw User passwork
  * @param {*} fun CallBack
  */
-const validCredencials = (email, pw, fun) => {
+const validCredencials = (email, pw) => new Promise( (resolve, reject) => {
     try {
         mysql.query(loginQuery, [email], async (error, result) => {
             if (error) throw error
-
-            const obj = {
-                OK: false,
-                errorMessage: "",
-                body: null
-            }
 
             if (result.length > 0) {
                 const hash = await bcrypt.compare(pw, result[0].pw)
 
                 if (hash) {
-                    obj.OK = true,
-                    obj.body = {
+                    resolve({
                         "id": result[0].id,
                         "name": result[0].name,
                         "email": result[0].email,
-                        "socketId": result[0].socket_id,
-                    }
+                    })
+                } else {
+                    reject(Error("password", "the password is incorrect.", 400))
                 }
+            } else {
+                reject(Error("unknown_user","this user is ot registed.", 404))
             }
-            fun(obj)
         })
-
     } catch (error) {
-        fun({
-            OK: false,
-            body: null
-        })
+        reject(Error("unknown", "Something went wrong.", 500))
     }
-
-}
-
+}) 
 /**
  * 
  * @param {*} id User Id

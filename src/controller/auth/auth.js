@@ -7,6 +7,7 @@ const { createToken } = require("../utils/jwt")
 const { validCredencials, updateUserSocket, registerNewUser } = require("../../services/authServices/authService")
 const { removeBearerToken } = require("../utils/helpers")
 const jwt = require("jsonwebtoken")
+const { Error } = require("../../services/entity/apiError")
 
 const regexEmail = /(^\w+)(\@{1})([a-zA-Z]+)(\.)[a-zA-Z]+/
 
@@ -70,45 +71,30 @@ const login = async (req, res) => {
     const { email, pw } = req.body
 
     if (validEmail(email)) {
-
-        validCredencials(email, pw, (data) => {
-            if (data.OK) {
-                const token = createToken({
-                    id: data.body.id,
-                    name: data.body.name,
-                    email: data.body.email
-                })
-
-                res.status(201).json({
-                    OK: true,
-                    message: Enum.SUCCESS,
-                    user: { 
-                        id: data.body.id,
-                        name: data.body.name,
-                        email: data.body.email
-                    },
-                    token: token
-                })
-            } else {
-                res.status(400).json({
-                    OK: false,
-                    message: Enum.FAIL,
-                    user: null,
-                    token: null
+        let statusCode = 201
+        
+        let result = await validCredencials(email, pw).then( data => {
+            return {
+                ...data,
+                token: createToken({
+                    id: data.id,
+                    name: data.name,
+                    email: data.email
                 })
             }
-        })
+        }).catch( err => {
+            return {
+                ...err,
+                status: err.status
+            }
+        } )
+
+        res.status(statusCode).json(result)
 
     } else {
-        res.status(400).json({
-            OK: false,
-            message: Enum.FAIL,
-            token: null
-        })
+        res.status(400).json(Error("email", "the email is incorret.", 400))
     }
-
 }
-
 
 const updateSocket = (token, socketId) => {
     try {
