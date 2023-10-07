@@ -71,25 +71,19 @@ const login = async (req, res) => {
     const { email, pw } = req.body
 
     if (validEmail(email)) {
-        let statusCode = 201
         
-        let result = await validCredencials(email, pw).then( data => {
-            return {
+        validCredencials(email, pw).then( data => {
+            res.status(200).json({
                 ...data,
                 token: createToken({
                     id: data.id,
                     name: data.name,
                     email: data.email
                 })
-            }
+            })
         }).catch( err => {
-            return {
-                ...err,
-                status: err.status
-            }
-        } )
-
-        res.status(statusCode).json(result)
+            res.status(err.status).json(err)
+        })
 
     } else {
         res.status(400).json(Error("email", "the email is incorret.", 400))
