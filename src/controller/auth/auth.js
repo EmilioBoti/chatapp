@@ -16,7 +16,7 @@ const Enum = {
     FAIL: "Fail"
 }
 
-const register = async (req, res) => {
+const signUpUser = async (req, res) => {
     const passW = await bcrypt.hash(req.body.pw, 8)
 
     const user = {
@@ -28,40 +28,21 @@ const register = async (req, res) => {
 
     if (validEmail(user.email)) {
 
-        registerNewUser(user, (data) => {
-            if (data.OK) {
-                const token = createToken({
-                    id: data.body.id,
-                    name: data.body.name,
-                    email: data.body.email
+        registerNewUser(user).then( data => {
+            res.status(200).json({
+                ...data,
+                token: createToken({
+                    id: data.id,
+                    name: data.name,
+                    email: data.email
                 })
-                sendingMail(user)
-                res.status(201).json({
-                    OK: true,
-                    message: Enum.SUCCESS,
-                    user: { 
-                        id: data.body.id,
-                        name: data.body.name,
-                        email: data.body.email
-                    },
-                    token: token
-                })
-            } else {
-                res.status(500).json({
-                    OK: false,
-                    message: Enum.FAIL,
-                    user: null,
-                    token: null
-                })
-            }
+            })
+            // sendingMail(user)
+        }).catch( err => {
+            res.status(err.status).json(err)
         })
-        
     } else {
-        res.status(400).json({
-            OK: false,
-            errorMessage: Enum.FAIL,
-            token: null
-        })
+        res.status(400).json(Error("email", "the email is incorret.", 400))
     }
 
 }
@@ -107,7 +88,7 @@ function validEmail(email) {
 
 
 module.exports = {
-    register,
+    signUpUser,
     login,
     updateSocket
 }

@@ -11,28 +11,24 @@ const { Error } = require("../entity/apiError")
  * @param {*} registerCallBack
  */
 
-const registerNewUser = (user, registerCallBack) => {
+const registerNewUser = (user) => new Promise( (resolve, reject) => {
     try {
         mysql.query(insertUserQuery, [user.id, user.name, user.email.toLowerCase(), user.pw], (error, result) => {
-            if (error) {
-                registerCallBack({
-                    OK: false,
-                    body: null
-                })
+            
+            if(result === undefined) {
+                reject(Error("user_exist", "this user already exist.", 400))
             } else {
-                registerCallBack({
-                    OK: true,
-                    body: user
+                resolve({
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
                 })
             }
         })
     } catch (error) {
-        registerCallBack({
-            OK: false,
-            body: null
-        })
+        reject(Error("unknown", "Something went wrong.", 500))
     }
-}
+})
 
 /**
  * 
