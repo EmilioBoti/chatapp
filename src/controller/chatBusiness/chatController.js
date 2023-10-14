@@ -3,7 +3,7 @@ const mysql = require("../../db/dbConnection")
 const dayjs = require("dayjs")
 
 const { encrypting, decrypt } = require("../utils/encryting")
-const { archiveRoomMessages, archiveUserContacts, searchUsers, saveMessage } = require("../../services/chatServices/chatService")
+const { archiveRoomMessages, queryUserChats, searchUsers, saveMessage } = require("../../services/chatServices/chatService")
 const jwt = require("jsonwebtoken")
 
 const getMessages = (req, res) => {
@@ -24,24 +24,18 @@ const getMessages = (req, res) => {
 }
 
 const getContacts = async (req, res) => {
-    let token = req.headers.authorization
-    if (token.includes("Bearer ")) token = token.slice(7)
-    const user = jwt.verify(token, process.env.JWTKEY)
+    const user = req.user
+    
+    queryUserChats(user.id).then( users => {
+        users.forEach((item) => {
+            if (item.lastMessage !== null || item.smsHash !== null) {
+                item.lastMessage = decrypt({ "iv": item.smsHash, "content": item.lastMessage })
+            }
+        })
+        res.status(201).json(users)
 
-    archiveUserContacts(user.id, (obj) => {
-        if (obj.OK) {
-            obj.body.forEach((item) => {
-                if (item.lastMessage !== null || item.smsHash !== null) {
-                    item.lastMessage = decrypt({ "iv": item.smsHash, "content": item.lastMessage })
-                }
-            })
-            res.status(201).json(obj)
-        } else {
-            res.status(400).json({
-                OK: false,
-                body: []
-            })
-        }
+    }).catch( err => {
+        res.status(err.status).json(err)
     })
 }
 

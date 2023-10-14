@@ -1,7 +1,7 @@
 const mysql = require("../../db/dbConnection")
 const dayjs = require("dayjs")
 const { encrypting, decrypt } = require("../../controller/utils/encryting")
-
+const { Error } = require("../../services/entity/apiError")
 
 const { queryUserContacts, queryGetMessages, queryFindUser, queryInsertSms, querySingleUser } = require("./chatQueries")
 
@@ -32,29 +32,17 @@ const archiveRoomMessages = (roomId, fun) => {
  * @param {*} id user id 
  * @param {*} fun callback
  */
-const archiveUserContacts = (id, fun) => {
+const queryUserChats = (id) => new Promise((resolve, reject) => {
     try {
         mysql.query(queryUserContacts, [id], (err, result) => {
-            if (err) {
-                fun({
-                    OK: false,
-                    body: []
-                })
-            } else {
-                fun({
-                    OK: true,
-                    body: result
-                })
-            }
+            if(err) throw err
+            resolve(result)
         })
 
     } catch (error) {
-        fun({
-            OK: false,
-            body: []
-        })
+        reject(Error("unknown", "", 500))
     }
-}
+})
 
 /**
  * 
@@ -108,7 +96,7 @@ const returnMesage = (message, fun) => {
 
 module.exports = {
     archiveRoomMessages,
-    archiveUserContacts,
+    queryUserChats,
     searchUsers,
     saveMessage
 }
