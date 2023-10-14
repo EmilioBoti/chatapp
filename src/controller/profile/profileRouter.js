@@ -6,9 +6,9 @@ const multer = require("multer")
 const upload = multer({ dest: "./assets" })
 
 const { uploadProfileImage } = require("./profileLogic")
-const { auth } = require("../chatBusiness/chatController")
+const { authTokenMiddleware } = require("../auth/middleware/authMiddleware")
 
-profileRouter.post("/uploadImg", upload.single("file"), auth, uploadProfileImage)
+profileRouter.post("/uploadImg", upload.single("file"), authTokenMiddleware, uploadProfileImage)
 
 
 module.exports = {

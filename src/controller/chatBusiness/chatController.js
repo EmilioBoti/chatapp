@@ -4,7 +4,7 @@ const dayjs = require("dayjs")
 
 const { encrypting, decrypt } = require("../utils/encryting")
 const { archiveRoomMessages, queryUserChats, searchUsers, saveMessage } = require("../../services/chatServices/chatService")
-const jwt = require("jsonwebtoken")
+
 
 const getMessages = (req, res) => {
     const { roomId } = req.params
@@ -84,43 +84,10 @@ const insertMessage = async (data, fun) => {
     }
 }
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next  
- * @returns 
- */
-const auth = (req, res, next) => {
-    let token = req.headers.authorization
-
-    if (!token) {
-        return res.status(401).json({
-            ok: false,
-            error: "Bad request, require a token",
-            body: null
-        })
-    }
-
-    try {
-        if (token.includes("Bearer ")) token = token.slice(7)
-        const verified = jwt.verify(token, process.env.JWTKEY)
-        req.user = verified
-        next()
-    } catch (err) {
-        res.status(401).json({
-            ok: false,
-            error: "Unauthorized",
-            body: null
-        })
-    }
-}
-
 module.exports = {
     findUser,
     createRoom,
     getContacts,
     getMessages,
-    insertMessage,
-    auth
+    insertMessage
 }
